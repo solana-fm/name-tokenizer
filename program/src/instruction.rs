@@ -1,3 +1,4 @@
+use solana_program::program_error::ProgramError;
 pub use crate::processor::{
     create_collection, create_mint, create_nft, edit_data, redeem_nft, withdraw_tokens,
 };
@@ -7,8 +8,9 @@ use {
     num_derive::FromPrimitive,
     solana_program::{instruction::Instruction, pubkey::Pubkey},
 };
+use std::mem::size_of;
 #[allow(missing_docs)]
-#[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
+#[derive(BorshDeserialize, BorshSerialize, FromPrimitive,Clone)]
 pub enum ProgramInstruction {
     /// Create the NFT mint
     /// 
@@ -98,6 +100,29 @@ pub enum ProgramInstruction {
     /// | 5     | ❌        | ❌      | The SPL name service program account |
     EditData,
 }
+
+
+
+impl ProgramInstruction {
+    pub fn deserialize(input: &[u8]) -> Result<Self, ProgramError> {
+
+        if input.len() < size_of::<u8>() {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        Ok(match input[0] {
+            0 => Self::CreateMint,
+            1 => Self::CreateCollection,
+            2 => Self::CreateNft,
+            3 => Self::RedeemNft,
+            4 => Self::WithdrawTokens,
+            9 => Self::EditData,
+            _ => return Err(ProgramError::InvalidAccountData),
+        })
+    }
+}
+
+
+
 #[allow(missing_docs)]
 pub fn create_mint(
     accounts: create_mint::Accounts<Pubkey>,
